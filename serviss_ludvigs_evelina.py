@@ -17,7 +17,7 @@ class Skidrumi():  #satur tikai datus par šķidrumiem, bez metodēm
 class Klients():  #satur datus par katra klienta pierakstu
     def __init__(self, nepieciesamas_detalas, marka, modelis):
         self.nepieciesamas_detalas = nepieciesamas_detalas
-        self.pieraksta_laiks = datetime.now() #ņem aktuālās dienas laiku
+        self.pieraksta_laiks = datetime.datetime.now() #ņem aktuālās dienas laiku
         self.marka = marka
         self.modelis = modelis
 
@@ -63,24 +63,28 @@ def pasutijums(piegadatajs, detala):
             "piegades diena" : datetime.now() + datetime.timedelta(days= piegadatajs.laiks) #izveido produkta piegādes laiku no pasūtījuma brīža un katra piegādātāja piegādes laika
         } 
         
-        with open('pasutijumi.json', 'a') as f:
-            json.dump(faila_detala, f)
+        with open('pasutijumi.json', 'a', encoding="utf8") as f:
+            json.dump(faila_detala, f,ensure_ascii=False)
         
         if input("Vai vēlaties pievienot vēl detaļas (j/n)? ") == "n":
             break
 
-def pieraksts(pasutitajs=Klients()):
+def pieraksts(pasutitajs):
     detalu_saraksts = pasutitajs.nepieciesamas_detalas
-
+    date = datetime.datetime.now()
+    pieraksti = {
+        "pieraksti" : []
+    }
     klients = {
-        "pieraksta laiks" : datetime.now(),
+        "pieraksta laiks" : date.strftime("%D"),
         "mašīnas marka" : pasutitajs.marka,
         "mašīnas modelis" : pasutitajs.modelis,
-        "nepieciešamās detaļas" : [detalu_saraksts.split(", ")]
+        "nepieciešamās detaļas" : detalu_saraksts.split(", ")
     }
+    pieraksti["pieraksti"].append(klients)
     
-    with open('pieraksti.json', 'a') as f:
-            json.dump(klients, f)
+    with open('pieraksti.json', 'w', encoding="utf8") as f:
+        json.dump(klients, f, ensure_ascii=False)
 
 def noliktava():
     pass
@@ -98,10 +102,17 @@ def izvelne():
             modelis = input("Kāds ir jūsu mašīnas modelis: ")
             pieraksts(Klients(detala, marka, modelis))
         if izvele == "3":
+            piegadatajs = 0
             for i in piegadataji:
                 print(f"Piegādātājs {piegadataji.index(i) + 1} - pasūtījuma cena: {i.cena_par_piegadi}, pasūtījuma laiks: {i.laiks}, minimālais pasūtījuma daudzums: {i.min_apjoms}, maksimālais pasūtījuma daudzums: {i.max_apjoms}")
-            piegadatajs = input(f"Kādu piegādātāju jūs vēlaties: ")
-            pasutijums(piegadataji[0], Detala(None, None, None, None))
+            while True:
+                piegadatajs = int(input(f"Kādu piegādātāju jūs vēlaties (1 - {len(piegadataji)}): "))
+                if piegadatajs < 1 or piegadatajs > len(piegadataji):
+                    print("Nepareizi ievadīts skaitlis!")
+                else:
+                    break
+
+            pasutijums(piegadataji[int(piegadatajs)], Detala(None, None, None, None))
         if izvele == "4":
             print("Visu labu!")
             break
