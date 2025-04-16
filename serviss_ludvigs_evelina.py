@@ -8,28 +8,22 @@ class Detala():  #satur tikai datus par detaļām, bez metodēm
         self.modelis = modelis
         self.detalas_cena = detalas_cena
 
-class Skidrumi():  #satur tikai datus par šķidrumiem, bez metodēm
-    def __init__(self, nosaukums, cena):
-        self.nosaukums = nosaukums
-        self.deriguma_termins = datetime.datetime.now() + datetime.timedelta(years = 5) #izveido derīguma termiņu, izmantojot laiku, kad šķidrums tiek pasūtīts
-        self.cena = cena
-
 class Klients():  #satur datus par katra klienta pierakstu
     def __init__(self, nepieciesamas_detalas, marka, modelis):
         self.nepieciesamas_detalas = nepieciesamas_detalas
-        self.pieraksta_laiks = datetime.datetime.now() #ņem aktuālās dienas laiku
+        self.pieraksta_laiks = datetime.datetime.now() #ņem esošās dienas laiku
         self.marka = marka
         self.modelis = modelis
 
-    def remontet(self, stundu_skaits, fails): 
+    '''def remontet(self, stundu_skaits, fails): 
         stundas_likme = 50 #eiro
         cena = (stundu_skaits * stundas_likme) + self.nepieciesamas_detalas.detalas_cena #aprēķina izmaksas klientam
         
         return cena
 
-        #butu janonem no noliktavas detala bet to izdomas kad bus kopa salikts
+        #butu janonem no noliktavas detala bet to izdomas kad bus kopa salikts'''
 
-class Piegadatajs():
+class Piegadatajs(): #satur datus par piegadatajiem
     def __init__(self, laiks, min_apjoms, max_apjoms, cena_par_piegadi):
         self.laiks = laiks
         self.min_apjoms = min_apjoms
@@ -42,7 +36,7 @@ piegadataji = [
     Piegadatajs(4, 1, 120, 12)
 ]
 
-def pasutijums(piegadatajs, detala):
+def pasutijums(piegadatajs, detala): #ļauj pasūtīt detaļas un ievieto datus par tām failā
     while True:
         #detala = Detala(None, None, None, None)
 
@@ -54,6 +48,7 @@ def pasutijums(piegadatajs, detala):
         
         datums = datetime.datetime.now() + datetime.timedelta(days=piegadatajs.laiks)
         kopeja_cena = detala.detalas_cena * skaits + piegadatajs.cena_par_piegadi
+        pasutijumi = []
         
         print(f"Kopējā detaļu cena: {kopeja_cena}")
         faila_detala = {
@@ -64,25 +59,28 @@ def pasutijums(piegadatajs, detala):
             "skaits" : skaits,
             "piegādes diena" : datums.strftime("%D")
         }
-        
-        with open('pasutijumi.json', 'a', encoding="utf8") as f:
-            json.dump(faila_detala, f, ensure_ascii=False, indent=4)
+        pasutijumi.append(faila_detala)
+        with open('pasutijumi.json', 'w', encoding="utf8") as f:
+            json.dump(pasutijumi, f, ensure_ascii=False)
         
         if input("Vai vēlaties pievienot vēl detaļas (j/n)? ") == "n":
             break
 
-def pieraksts(pasutitajs):
+def pieraksts(pasutitajs): #ļauj pierakstīt klientus un ievieto datus par tiem failā
     detalu_saraksts = pasutitajs.nepieciesamas_detalas
     date = datetime.datetime.now()
+    pieraksti = []
+    with open("pieraksti.json") as f:
+        pieraksti = json.load(f)
     klients = {
         "pieraksta laiks" : date.strftime("%D/%H/%M"),
         "mašīnas marka" : pasutitajs.marka,
         "mašīnas modelis" : pasutitajs.modelis,
         "nepieciešamās detaļas" : detalu_saraksts.split(", ")
     }
-    
-    with open('pieraksti.json', 'a', encoding="utf8") as f:
-        json.dump(klients, f, ensure_ascii=False, indent=4)
+    pieraksti.append(klients)
+    with open('pieraksti.json', 'w', encoding="utf8") as f:
+        json.dump(pieraksti, f, ensure_ascii=False)
 
 def noliktava():
     with open('pasutijumi.json', 'r') as file:
@@ -92,10 +90,22 @@ def noliktava():
         laiks = i.get('piegādes diena')
         piegades_diena = datetime.strptime(laiks, '%D')
         if piegades_diena < datetime.now():
+            del i["piegādes diena"]
             with open('noliktava.json', 'a', encoding="utf8") as f:
-                json.dump(i, f, ensure_ascii=False, indent=4)
-            
+                json.dump(i, f, ensure_ascii=False)
             pasutijumi.remove(i)
+        else:
+            with open('pasutijumi.json', 'w', encoding="utf8") as f:
+                json.dump(i, f, ensure_ascii=False)
+    
+    with open('noliktava.json', 'r') as file:
+        preces = [json.loads(line) for line in file]
+    
+    print("Preces, kas atrodas noliktavā:")
+    for i in preces:
+        print(i)
+
+    izvelne()
 
 def izvelne():
     print("Servisa noliktavas un pierakstu uzskaites programma.")
@@ -112,7 +122,7 @@ def izvelne():
         if izvele == "3":
             piegadatajs = 0
             for i in piegadataji:
-                print(f"Piegādātājs {piegadataji.index(i) + 1} - pasūtījuma cena: {i.cena_par_piegadi}€, pasūtījuma laiks: {i.laiks} dienas, minimālais pasūtījuma daudzums: {i.min_apjoms}, maksimālais pasūtījuma daudzums: {i.max_apjoms}")
+                print(f"Piegādātājs {piegadataji.index(i)} - pasūtījuma cena: {i.cena_par_piegadi}€, pasūtījuma laiks: {i.laiks} dienas, minimālais pasūtījuma daudzums: {i.min_apjoms}, maksimālais pasūtījuma daudzums: {i.max_apjoms}")
             while True:
                 piegadatajs = int(input(f"Kādu piegādātāju jūs vēlaties (1 - {len(piegadataji)}): "))
                 if piegadatajs < 1 or piegadatajs > len(piegadataji):
